@@ -1,6 +1,8 @@
 import * as Yup from 'yup';
+import Cryptr from 'cryptr';
 
 import User from '../models/User';
+import Mail from '../../lib/Mail';
 
 class UserController {
   async index(req, res) {
@@ -24,6 +26,22 @@ class UserController {
       return res.status(400).json({ error: 'User already exists.' });
     }
     const { id, name, email, provider } = await User.create(req.body);
+
+    const cryptr = new Cryptr('YourSecretHere');
+
+    const encryptedString = cryptr.encrypt(id);
+    // const decryptedString = cryptr.decrypt(encryptedString);
+
+    await Mail.sendMail({
+      to: `${name} <${email}>`,
+      subject: "Welcome, we are glad you're here!",
+      template: 'welcome',
+      context: {
+        username: name,
+        verificationUrl: `http://localhost:3000/verify/${encryptedString}`,
+      },
+    });
+
     return res.json({ id, name, email, provider });
   }
 
