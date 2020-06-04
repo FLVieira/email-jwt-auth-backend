@@ -6,7 +6,7 @@ import Mail from '../../lib/Mail';
 
 class UserController {
   async index(req, res) {
-    const users = await User.findAll({ attributes: ['name', 'email'] });
+    const users = await User.findAll();
     return res.json(users);
   }
 
@@ -36,9 +36,8 @@ class UserController {
     }
     const { id, name, email } = await User.create(req.body);
 
-    const cryptr = new Cryptr('YourSecretHere');
+    const cryptr = new Cryptr(process.env.HASH_SECRET);
     const encryptedString = cryptr.encrypt(id);
-    // const decryptedString = cryptr.decrypt(encryptedString);
 
     await Mail.sendMail({
       to: `${name} <${email}>`,
@@ -50,7 +49,7 @@ class UserController {
       },
     });
 
-    return res.json({ id, name, email, provider });
+    return res.json({ id, name, email });
   }
 
   async update(req, res) {
@@ -78,7 +77,7 @@ class UserController {
     }
 
     const { id, name } = user;
-    const cryptr = new Cryptr('YourSecretHere');
+    const cryptr = new Cryptr(process.env.HASH_SECRET);
     const encryptedString = cryptr.encrypt(id);
 
     await Mail.sendMail({
