@@ -27,7 +27,13 @@ class SessionController {
         return res.status(401).json({ error: 'Password does not match' });
       }
 
-      const { id, name } = user;
+      const { id, name, verified } = user;
+
+      if (verified === false) {
+        return res.status(400).json({
+          error: 'You have to verify your email to be able to log in.',
+        });
+      }
 
       return res.json({
         user: { id, name, email },
