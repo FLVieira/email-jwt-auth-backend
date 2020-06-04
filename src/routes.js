@@ -9,7 +9,9 @@ const routes = new Router();
 
 routes.post('/users', userController.store);
 routes.get('/users', userController.index);
-routes.put('/users', authMiddleware, userController.update);
+routes.get('/users/:id', userController.show);
+routes.put('/users/:id', userController.update);
+routes.get('/recovery', userController.recovery);
 
 routes.post('/sessions', sessionController.store);
 

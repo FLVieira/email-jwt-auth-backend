@@ -10,6 +10,15 @@ class UserController {
     return res.json(users);
   }
 
+  async show(req, res) {
+    const { id } = req.params;
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid user.' });
+    }
+    return res.json(user);
+  }
+
   async store(req, res) {
     const schema = Yup.object().shape({
       name: Yup.string().required().min(6).max(55),
@@ -25,10 +34,9 @@ class UserController {
     if (userExists) {
       return res.status(400).json({ error: 'User already exists.' });
     }
-    const { id, name, email, provider } = await User.create(req.body);
+    const { id, name, email } = await User.create(req.body);
 
     const cryptr = new Cryptr('YourSecretHere');
-
     const encryptedString = cryptr.encrypt(id);
     // const decryptedString = cryptr.decrypt(encryptedString);
 
@@ -46,47 +54,44 @@ class UserController {
   }
 
   async update(req, res) {
-    const schema = Yup.object().shape({
-      name: Yup.string().min(6).max(55),
-      email: Yup.string().email(),
-      oldPassword: Yup.string().min(6).max(55),
-      password: Yup.string()
-        .min(6)
-        .max(55)
-        .when('oldPassword', (oldPassword, field) =>
-          oldPassword ? field.required() : field
-        ),
-      confirmPassword: Yup.string().when('password', (password, field) =>
-        password ? field.required().oneOf([Yup.ref('password')]) : field
-      ),
+    try {
+      const { id } = req.params;
+      const user = await User.findByPk(id);
+      await user.update(req.body);
+      return res.json(user);
+    } catch (err) {
+      return res.status(401).json({ error: 'The update sadly failed.' });
+    }
+  }
+
+  async recovery(req, res) {
+    const { email } = req.query;
+    const user = await User.findOne({
+      where: {
+        email,
+      },
+    });
+    if (!user) {
+      return res.status(400).json({
+        error: 'Invalid email',
+      });
+    }
+
+    const { id, name } = user;
+    const cryptr = new Cryptr('YourSecretHere');
+    const encryptedString = cryptr.encrypt(id);
+
+    await Mail.sendMail({
+      to: `${name} <${email}>`,
+      subject: 'Recover your password',
+      template: 'recovery',
+      context: {
+        username: name,
+        recoveryUrl: `http://localhost:3000/recovery/${encryptedString}`,
+      },
     });
 
-    if (!(await schema.isValid(req.body))) {
-      return res.status(400).json({ error: 'Validation Fails.' });
-    }
-
-    try {
-      const { email, oldPassword } = req.body;
-      const user = await User.findByPk(req.userId);
-
-      if (email && email !== user.email) {
-        const userExists = await User.findOne({
-          where: { email },
-        });
-        if (userExists) {
-          return res.status(400).json({ error: 'User already exists.' });
-        }
-      }
-
-      if (oldPassword && !(await user.checkPassword(oldPassword))) {
-        return res.status(401).json({ error: 'Old password does not match.' });
-      }
-
-      const { id, name, provider } = await user.update(req.body);
-      return res.json({ id, name, email, provider });
-    } catch (err) {
-      return res.status(401).json({ error: err });
-    }
+    return res.send();
   }
 }
 
