@@ -67,3 +67,9 @@ MAIL_PASS=
 If everything worked fine by now, to be able to test the routes of this api, you just have to import the insomnia.json file in the root
 directory of the project to your insomnia.
 
+## Observations
+
+I have done this app with the intention of creating a simple template that takes care of the initial authentication resolutions,
+although it still's need further funcionalities and coding from whoever decides to use in order to become a full authentication
+"tool".
+
